@@ -1,0 +1,18 @@
+{
+    "weather": [],
+    "sources": [
+        {
+            "id": 2252,
+            "dwd_station_id": "00282",
+            "observation_type": "forecast",
+            "lat": 49.88,
+            "lon": 10.92,
+            "height": 243.0,
+            "station_name": "BAMBERG",
+            "wmo_station_id": "10675",
+            "first_record": "2020-10-16T12:00:00+00:00",
+            "last_record": "2020-10-26T13:00:00+00:00",
+            "distance": 7438.0
+        }
+    ]
+}

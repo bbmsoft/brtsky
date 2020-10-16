@@ -3,11 +3,31 @@ extern crate serde_derive;
 
 use chrono::{DateTime, FixedOffset};
 use serde_json::Value;
+use std::fmt;
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Response {
     weather: Vec<WeatherData>,
     sources: Vec<Source>,
+}
+
+impl fmt::Display for Response {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let src = &self.sources[0];
+
+        let iter = self.weather.iter();
+        let mapped = iter.map(|wd| WeatherDataSet::new(wd, src).to_string());
+        let folded = mapped
+            .fold(None, |a, b| {
+                if let Some(a) = a {
+                    Some(format!("{}\n\n{}", a, b))
+                } else {
+                    Some(b)
+                }
+            })
+            .unwrap_or_else(|| "[no data]".to_owned());
+        write!(f, "{}", folded)
+    }
 }
 
 #[derive(Debug, PartialEq, Deserialize)]
@@ -23,13 +43,57 @@ pub struct WeatherData {
     wind_speed: f32,
     cloud_cover: f32,
     dew_point: f32,
-    relative_humidity: f32,
+    relative_humidity: Option<f32>,
     visibility: f32,
-    wind_gust_direction: f32,
+    wind_gust_direction: Option<f32>,
     wind_gust_speed: f32,
     condition: Condition,
     icon: String,
     fallback_source_ids: Option<Value>,
+}
+
+pub struct WeatherDataSet<'a> {
+    weather_data: &'a WeatherData,
+    source: &'a Source,
+}
+
+impl<'a> WeatherDataSet<'a> {
+    fn new(weather_data: &'a WeatherData, source: &'a Source) -> WeatherDataSet<'a> {
+        WeatherDataSet {
+            weather_data,
+            source,
+        }
+    }
+}
+
+impl<'a> fmt::Display for WeatherDataSet<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "City: {}
+Date: {}
+Condition: {}
+Temperature: {} °C
+Sunshine: {} min
+Precipitation: {} mm
+Wind Speed: {} km/h
+Wind Gust Speed: {} km/h
+Cloud Cover: {} %
+Humidity: {}",
+            self.source.station_name,
+            self.weather_data.timestamp,
+            self.weather_data.condition,
+            self.weather_data.temperature,
+            self.weather_data.sunshine,
+            self.weather_data.precipitation,
+            self.weather_data.wind_speed,
+            self.weather_data.wind_gust_speed,
+            self.weather_data.cloud_cover,
+            self.weather_data
+                .relative_humidity
+                .map_or_else(|| "-".to_owned(), |f| format!("{} %", f))
+        )
+    }
 }
 
 #[derive(Debug, PartialEq, Deserialize)]
@@ -66,6 +130,21 @@ pub enum Condition {
     Thunderstorm,
     #[serde(rename = "null")]
     Null,
+}
+
+impl fmt::Display for Condition {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Condition::Dry => write!(f, "Dry"),
+            Condition::Fog => write!(f, "Fog"),
+            Condition::Rain => write!(f, "Rain"),
+            Condition::Sleet => write!(f, "Sleet"),
+            Condition::Snow => write!(f, "Snow"),
+            Condition::Hail => write!(f, "Hail"),
+            Condition::Thunderstorm => write!(f, "Thunder Storm"),
+            Condition::Null => write!(f, "-"),
+        }
+    }
 }
 
 #[derive(Debug, PartialEq, Deserialize)]
