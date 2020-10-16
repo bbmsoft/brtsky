@@ -13,17 +13,13 @@ pub struct Response {
 
 impl fmt::Display for Response {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let src = &self.sources[0];
-
         let iter = self.weather.iter();
-        let mapped = iter.map(|wd| WeatherDataSet::new(wd, src).to_string());
+        let mapped = iter.map(|wd| WeatherDataSet::new(wd, wd.source(&self.sources)));
         let folded = mapped
-            .fold(None, |a, b| {
-                if let Some(a) = a {
-                    Some(format!("{}\n\n{}", a, b))
-                } else {
-                    Some(b)
-                }
+            .fold(None, |a, b| match (a, b) {
+                (Some(a), Some(b)) => Some(format!("{}\n\n{}", a, b)),
+                (None, Some(b)) => Some(b.to_string()),
+                (_, None) => None,
             })
             .unwrap_or_else(|| "[no data]".to_owned());
         write!(f, "{}", folded)
@@ -52,17 +48,32 @@ pub struct WeatherData {
     fallback_source_ids: Option<Value>,
 }
 
+impl WeatherData {
+    fn source<'a>(&self, sources: &'a Vec<Source>) -> Option<&'a Source> {
+        let time = &self.timestamp;
+        for source in sources {
+            if source.contains(time) {
+                return Some(source);
+            }
+        }
+        None
+    }
+}
+
 pub struct WeatherDataSet<'a> {
     weather_data: &'a WeatherData,
     source: &'a Source,
 }
 
 impl<'a> WeatherDataSet<'a> {
-    fn new(weather_data: &'a WeatherData, source: &'a Source) -> WeatherDataSet<'a> {
-        WeatherDataSet {
+    fn new(
+        weather_data: &'a WeatherData,
+        source: Option<&'a Source>,
+    ) -> Option<WeatherDataSet<'a>> {
+        source.map(|source| WeatherDataSet {
             weather_data,
             source,
-        }
+        })
     }
 }
 
@@ -72,6 +83,7 @@ impl<'a> fmt::Display for WeatherDataSet<'a> {
             f,
             "City: {}
 Date: {}
+Type: {}
 Condition: {}
 Temperature: {} °C
 Sunshine: {} min
@@ -82,6 +94,7 @@ Cloud Cover: {} %
 Humidity: {}",
             self.source.station_name,
             self.weather_data.timestamp,
+            self.source.observation_type,
             self.weather_data.condition,
             self.weather_data.temperature,
             self.weather_data.sunshine,
@@ -99,7 +112,7 @@ Humidity: {}",
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Source {
     id: i32,
-    dwd_station_id: String,
+    dwd_station_id: Option<String>,
     observation_type: ObservationType,
     lat: f32,
     lon: f32,
@@ -112,6 +125,13 @@ pub struct Source {
     last_record: DateTime<FixedOffset>,
     distance: f32,
 }
+
+impl Source {
+    fn contains(&self, time: &DateTime<FixedOffset>) -> bool {
+        &self.first_record <= time && time <= &self.last_record
+    }
+}
+
 #[derive(Debug, PartialEq, Deserialize)]
 pub enum Condition {
     #[serde(rename = "dry")]
@@ -189,6 +209,18 @@ pub enum ObservationType {
     Recent,
     #[serde(rename = "historical")]
     Historical,
+}
+
+impl fmt::Display for ObservationType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ObservationType::Forecast => write!(f, "Forecast"),
+            ObservationType::Synop => write!(f, "SYNOP"),
+            ObservationType::Current => write!(f, "Current"),
+            ObservationType::Recent => write!(f, "Recent"),
+            ObservationType::Historical => write!(f, "Historical"),
+        }
+    }
 }
 
 mod date_serde {
