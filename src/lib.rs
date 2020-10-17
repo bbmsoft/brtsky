@@ -11,41 +11,63 @@ pub struct Response {
     sources: Vec<Source>,
 }
 
+impl Response {
+    pub fn weather_data(&self) -> &Vec<WeatherData> {
+        &self.weather
+    }
+
+    pub fn sources(&self) -> &Vec<Source> {
+        &self.sources
+    }
+
+    pub fn weather_data_sets(&self) -> impl Iterator<Item = WeatherDataSet> {
+        let iter = self.weather.iter();
+        let mapped = iter.filter_map(move |wd| WeatherDataSet::new(wd, wd.source(&self.sources)));
+        mapped
+    }
+}
+
 impl fmt::Display for Response {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let iter = self.weather.iter();
-        let mapped = iter.map(|wd| WeatherDataSet::new(wd, wd.source(&self.sources)));
-        let folded = mapped
-            .fold(None, |a, b| match (a, b) {
-                (Some(a), Some(b)) => Some(format!("{}\n\n{}", a, b)),
-                (None, Some(b)) => Some(b.to_string()),
-                (_, None) => None,
+        let data_sets = self.weather_data_sets();
+        let folded = data_sets
+            .fold(None, |a, b| match a {
+                Some(a) => Some(format!("{}\n\n{}", a, b)),
+                None => Some(b.to_string()),
             })
             .unwrap_or_else(|| "[no data]".to_owned());
         write!(f, "{}", folded)
     }
 }
 
+impl std::str::FromStr for Response {
+    type Err = serde_json::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        serde_json::from_str(s)
+    }
+}
+
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct WeatherData {
     #[serde(with = "date_serde")]
-    timestamp: DateTime<FixedOffset>,
-    source_id: i32,
-    precipitation: f32,
-    pressure_msl: f32,
-    sunshine: f32,
-    temperature: f32,
-    wind_direction: f32,
-    wind_speed: f32,
-    cloud_cover: f32,
-    dew_point: f32,
-    relative_humidity: Option<f32>,
-    visibility: f32,
-    wind_gust_direction: Option<f32>,
-    wind_gust_speed: f32,
-    condition: Condition,
-    icon: String,
-    fallback_source_ids: Option<Value>,
+    pub timestamp: DateTime<FixedOffset>,
+    pub source_id: i32,
+    pub precipitation: f32,
+    pub pressure_msl: f32,
+    pub sunshine: f32,
+    pub temperature: f32,
+    pub wind_direction: f32,
+    pub wind_speed: f32,
+    pub cloud_cover: f32,
+    pub dew_point: f32,
+    pub relative_humidity: Option<f32>,
+    pub visibility: f32,
+    pub wind_gust_direction: Option<f32>,
+    pub wind_gust_speed: f32,
+    pub condition: Condition,
+    pub icon: String,
+    pub fallback_source_ids: Option<Value>,
 }
 
 impl WeatherData {
@@ -74,6 +96,14 @@ impl<'a> WeatherDataSet<'a> {
             weather_data,
             source,
         })
+    }
+
+    pub fn weather_data(&self) -> &WeatherData {
+        &self.weather_data
+    }
+
+    pub fn source(&self) -> &Source {
+        &self.source
     }
 }
 
@@ -111,19 +141,19 @@ Humidity: {}",
 
 #[derive(Debug, PartialEq, Deserialize)]
 pub struct Source {
-    id: i32,
-    dwd_station_id: Option<String>,
-    observation_type: ObservationType,
-    lat: f32,
-    lon: f32,
-    height: f32,
-    station_name: String,
-    wmo_station_id: String,
+    pub id: i32,
+    pub dwd_station_id: Option<String>,
+    pub observation_type: ObservationType,
+    pub lat: f32,
+    pub lon: f32,
+    pub height: f32,
+    pub station_name: String,
+    pub wmo_station_id: String,
     #[serde(with = "date_serde")]
-    first_record: DateTime<FixedOffset>,
+    pub first_record: DateTime<FixedOffset>,
     #[serde(with = "date_serde")]
-    last_record: DateTime<FixedOffset>,
-    distance: f32,
+    pub last_record: DateTime<FixedOffset>,
+    pub distance: f32,
 }
 
 impl Source {
