@@ -1,10 +1,17 @@
 [package]
-name = "brightsky-rs"
+name = "brtsky"
 version = "0.1.0"
 authors = ["Michael Bachmann <mbachmann@bbmsoft.net>"]
 edition = "2018"
+description = "A rusty parser for the Bright Sky weather API found at https://brightsky.dev"
+repository = "https://github.com/bbmsoft/brtsky.git"
+license = "MIT OR Apache-2.0"
+keywords = ["weather", "json", "parser"]
+categories = ["api-bindings"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[badges]
+travis-ci = { repository = "https://github.com/bbmsoft/brtsky.git", branch = "master" }
+maintenance = { status = "actively-developed" }
 
 [dependencies]
 serde = "1.0"
