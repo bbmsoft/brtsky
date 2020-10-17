@@ -5,7 +5,7 @@ use chrono::{DateTime, FixedOffset};
 use serde_json::Value;
 use std::fmt;
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct Response {
     weather: Vec<WeatherData>,
     sources: Vec<Source>,
@@ -48,7 +48,7 @@ impl std::str::FromStr for Response {
     }
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct WeatherData {
     #[serde(with = "date_serde")]
     pub timestamp: DateTime<FixedOffset>,
@@ -139,7 +139,7 @@ Humidity: {}",
     }
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct Source {
     pub id: i32,
     pub dwd_station_id: Option<String>,
@@ -162,7 +162,7 @@ impl Source {
     }
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub enum Condition {
     #[serde(rename = "dry")]
     Dry,
@@ -227,7 +227,7 @@ pub enum Icon {
     Null,
 }
 
-#[derive(Debug, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub enum ObservationType {
     #[serde(rename = "forecast")]
     Forecast,
