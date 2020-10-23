@@ -53,20 +53,20 @@ pub struct WeatherData {
     #[serde(with = "date_serde")]
     pub timestamp: DateTime<FixedOffset>,
     pub source_id: i32,
-    pub precipitation: f32,
-    pub pressure_msl: f32,
-    pub sunshine: f32,
-    pub temperature: f32,
-    pub wind_direction: f32,
-    pub wind_speed: f32,
-    pub cloud_cover: f32,
-    pub dew_point: f32,
+    pub precipitation: Option<f32>,
+    pub pressure_msl: Option<f32>,
+    pub sunshine: Option<f32>,
+    pub temperature: Option<f32>,
+    pub wind_direction: Option<f32>,
+    pub wind_speed: Option<f32>,
+    pub cloud_cover: Option<f32>,
+    pub dew_point: Option<f32>,
     pub relative_humidity: Option<f32>,
-    pub visibility: f32,
+    pub visibility: Option<f32>,
     pub wind_gust_direction: Option<f32>,
-    pub wind_gust_speed: f32,
-    pub condition: Condition,
-    pub icon: String,
+    pub wind_gust_speed: Option<f32>,
+    pub condition: Option<Condition>,
+    pub icon: Option<String>,
     pub fallback_source_ids: Option<Value>,
 }
 
@@ -115,23 +115,39 @@ impl<'a> fmt::Display for WeatherDataSet<'a> {
 Date: {}
 Type: {}
 Condition: {}
-Temperature: {} °C
-Sunshine: {} min
-Precipitation: {} mm
-Wind Speed: {} km/h
-Wind Gust Speed: {} km/h
-Cloud Cover: {} %
+Temperature: {}
+Sunshine: {}
+Precipitation: {}
+Wind Speed: {}
+Wind Gust Speed: {}
+Cloud Cover: {}
 Humidity: {}",
             self.source.station_name,
             self.weather_data.timestamp,
             self.source.observation_type,
-            self.weather_data.condition,
-            self.weather_data.temperature,
-            self.weather_data.sunshine,
-            self.weather_data.precipitation,
-            self.weather_data.wind_speed,
-            self.weather_data.wind_gust_speed,
-            self.weather_data.cloud_cover,
+            &self
+                .weather_data
+                .condition
+                .as_ref()
+                .map_or_else(|| "-".to_owned(), |f| format!("{}", f)),
+            self.weather_data
+                .temperature
+                .map_or_else(|| "-".to_owned(), |f| format!("{} °C", f)),
+            self.weather_data
+                .sunshine
+                .map_or_else(|| "-".to_owned(), |f| format!("{} min", f)),
+            self.weather_data
+                .precipitation
+                .map_or_else(|| "-".to_owned(), |f| format!("{} mm", f)),
+            self.weather_data
+                .wind_speed
+                .map_or_else(|| "-".to_owned(), |f| format!("{} km/h", f)),
+            self.weather_data
+                .wind_gust_speed
+                .map_or_else(|| "-".to_owned(), |f| format!("{} km/h", f)),
+            self.weather_data
+                .cloud_cover
+                .map_or_else(|| "-".to_owned(), |f| format!("{} %", f)),
             self.weather_data
                 .relative_humidity
                 .map_or_else(|| "-".to_owned(), |f| format!("{} %", f))
